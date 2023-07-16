@@ -1,22 +1,19 @@
 package com.shchin.userservice.dao;
 
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
-import java.io.Serializable;
 
 @Builder
 @Getter
 @Setter
 @Entity
 @AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "participants", schema="public")
 @IdClass(ParticipantId.class)
-public class ParticipantDAO {
+public class Participant {
 
     @Id
     private Long meetingId;
@@ -24,8 +21,8 @@ public class ParticipantDAO {
     @Id
     private Long userId;
 
+
     private boolean isOrganizer;
 
-    public ParticipantDAO(){}
 
 }

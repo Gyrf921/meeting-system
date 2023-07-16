@@ -1,11 +1,12 @@
 package com.shchin.userservice.web.controller;
 
-import com.shchin.userservice.dao.MeetingDAO;
-import com.shchin.userservice.dao.ParticipantDAO;
-import com.shchin.userservice.exception.ResourceNotFoundException;
+import com.shchin.userservice.dao.Meeting;
+import com.shchin.userservice.dao.Participant;
 import com.shchin.userservice.service.*;
+import com.shchin.userservice.service.impl.MeetingServiceImpl;
+import com.shchin.userservice.service.impl.ParticipantServiceImpl;
 import com.shchin.userservice.web.dto.MeetingDTO;
-import com.shchin.userservice.web.dto.ParticipantDTO;
+import com.shchin.userservice.web.dto.ParticipantsDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/meetingController")
+@RequestMapping("/meeting-api")
 public class MeetingController {
     private final ParticipantService participantService;
 
@@ -27,51 +28,80 @@ public class MeetingController {
     }
 
 
-    @GetMapping("/getInfoAboutMeeting/{id}")
-    public ResponseEntity<MeetingDAO> getInfoAboutMeeting(@PathVariable(value = "id") Long id)
+    @GetMapping("/meetings/{id}")
+    public ResponseEntity<Meeting> getInfoAboutMeeting(@PathVariable(value = "id") Long id)
     {
-        MeetingDAO meetingDAO = meetingService.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Meeting with this {} id not exist or not founded"));
+        log.info("[getInfoAboutMeeting] >> id: {}", id);
 
-        return ResponseEntity.ok().body(meetingDAO);
+        Meeting meeting = meetingService.findById(id);
+
+        log.info("[getInfoAboutMeeting] << result: {}", meeting);
+
+        return ResponseEntity.ok().body(meeting);
 
     }
 
-    @PutMapping("/createMeeting")
-    public ResponseEntity<MeetingDAO> createMeeting(@Valid @RequestBody ParticipantDTO participantDTO)
+    @PutMapping("/meetings")
+    public ResponseEntity<Meeting> createMeeting(@Valid @RequestBody ParticipantsDTO participantsDTO)
     {
-        MeetingDAO meetingDAO = meetingService.create(participantDTO.getMeetingDTO(), participantDTO.getUserOrganizer().getId());
+        log.info("[createMeeting] >> participantsDTO: {}", participantsDTO);
 
-        return ResponseEntity.ok().body(meetingDAO);
+        Meeting meeting = meetingService.createMeetingWithoutParticipants(participantsDTO.getMeetingDTO(), participantsDTO.getUserOrganizerId());
+
+        log.info("[createMeeting] << result: {}", meeting);
+
+        return ResponseEntity.ok().body(meeting);
     }
 
-    @PostMapping("/updateMeetingInfo/{id}")
-    public ResponseEntity<MeetingDAO> updateMeetingInfo(@PathVariable(value = "id") Long id,
-                                                        @Valid @RequestBody MeetingDTO meetingDTO)
+    @PostMapping("/meetings/{id}")
+    public ResponseEntity<Meeting> updateMeetingInfo(@PathVariable(value = "id") Long id,
+                                                     @Valid @RequestBody MeetingDTO meetingDTO)
     {
-        MeetingDAO meetingDAO = meetingService.update(id, meetingDTO);
+        log.info("[updateMeetingInfo] >> id: {}, meetingDTO: {}", id, meetingDTO);
 
-        return ResponseEntity.ok().body(meetingDAO);
+        Meeting meetingNewInfo = meetingService.updateInfoAboutMeeting(id, meetingDTO);
+
+        log.info("[updateMeetingInfo] << result: {}", meetingNewInfo);
+
+        return ResponseEntity.ok().body(meetingNewInfo);
     }
 
 
-    @GetMapping("/getParticipant/{id}")
-    public List<ParticipantDAO> getParticipant(@PathVariable(value = "id") Long id)
+    @GetMapping("/participants/{id}")
+    public List<Participant> getParticipants(@PathVariable(value = "id") Long id)
     {
-        return participantService.findAllUsersByMeetingId(id);
+        log.info("[getParticipants] >> id: {}", id);
+
+        List<Participant> participantList = participantService.findAllUsersByMeetingId(id);
+
+        log.info("[getParticipants] << result: {}", participantList);
+
+        return participantList;
     }
 
-    @PutMapping("/createParticipant")
-    public List<ParticipantDAO> createParticipant(@Valid @RequestBody ParticipantDTO participantDTO)
+    @PutMapping("/participants")
+    public List<Participant> createParticipant(@Valid @RequestBody ParticipantsDTO participantsDTO)
     {
-        return participantService.create(participantDTO.getMeetingDTO(), participantDTO.getUserDAOList(), participantDTO.getUserOrganizer());
+        log.info("[createParticipant] >> participantsDTO: {}", participantsDTO);
+
+        List<Participant> participantList = participantService.createMeetingWithParticipants(participantsDTO.getMeetingDTO(), participantsDTO.getUsersIdList(), participantsDTO.getUserOrganizerId());
+
+        log.info("[createParticipant] << result: {}", participantList);
+
+        return participantList;
     }
 
-    @PutMapping("/createParticipant/{id}")
-    public List<ParticipantDAO> updateParticipant(@PathVariable(value = "id") Long id,
-                                                  @Valid @RequestBody ParticipantDTO participantDTO)
+    @PostMapping("/participants/{id}")
+    public List<Participant> updateParticipant(@PathVariable(value = "id") Long id,
+                                               @Valid @RequestBody ParticipantsDTO participantsDTO)
     {
-        return participantService.addNewUsersInMeeting(id, participantDTO.getUserDAOList());
+        log.info("[updateParticipant] >> id: {}, participantsDTO: {}", id, participantsDTO);
+
+        List<Participant> participantList = participantService.addNewUsersInMeeting(id, participantsDTO.getUsersIdList());
+
+        log.info("[updateParticipant] << result: {}", participantList);
+
+        return participantList;
     }
 
 }

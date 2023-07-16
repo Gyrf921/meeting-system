@@ -6,14 +6,12 @@ import lombok.NoArgsConstructor;
 import javax.persistence.*;
 import java.io.Serializable;
 
-@Embeddable
 @AllArgsConstructor
+@NoArgsConstructor
 public class ParticipantId implements Serializable {
 
     private Long meetingId;
 
     private Long userId;
-
-    public ParticipantId(){}
 
 }

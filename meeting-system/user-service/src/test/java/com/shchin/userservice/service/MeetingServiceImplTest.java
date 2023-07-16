@@ -1,13 +1,12 @@
 package com.shchin.userservice.service;
 
-import com.shchin.userservice.dao.MeetingDAO;
-import com.shchin.userservice.dao.ParticipantDAO;
-import com.shchin.userservice.dao.UserDAO;
-import com.shchin.userservice.exception.ResourceNotFoundException;
+import com.shchin.userservice.dao.Meeting;
+import com.shchin.userservice.dao.Participant;
+import com.shchin.userservice.dao.User;
 import com.shchin.userservice.repository.MeetingRepository;
 import com.shchin.userservice.repository.ParticipantRepository;
 
-import java.text.SimpleDateFormat;
+import com.shchin.userservice.service.impl.MeetingServiceImpl;
 import com.shchin.userservice.web.dto.MeetingDTO;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,9 +17,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
@@ -39,42 +40,41 @@ class MeetingServiceImplTest {
     @InjectMocks
     private MeetingServiceImpl meetingService;
 
-    private UserDAO userDAO;
+    private User user;
 
-    private MeetingDAO meetingDAO;
+    private Meeting meeting;
     private MeetingDTO meetingDTO;
 
-    private ParticipantDAO participantWithOrganizerDAO;
+    private Participant participantWithOrganizerDAO;
 
     @SneakyThrows
     @BeforeEach
     void setUp() {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        String dateInString = "2023-07-11";
 
-        meetingDAO = MeetingDAO.builder()
+
+        meeting = Meeting.builder()
                 .id(111L)
                 .name("userNameForTest")
                 .description("descriptionForTest")
-                .datetimeStart(formatter.parse(dateInString))
-                .datetimeEnd(formatter.parse(dateInString))
+                .datetimeStart(LocalDate.now())
+                .datetimeEnd(LocalDate.now())
                 .build();
 
         meetingDTO = MeetingDTO.builder()
                 .name("userNameForTest")
                 .description("descriptionForTest")
-                .datetimeStart(formatter.parse(dateInString))
-                .datetimeEnd(formatter.parse(dateInString))
+                .datetimeStart(LocalDate.now())
+                .datetimeEnd(LocalDate.now())
                 .build();
 
-        userDAO = UserDAO.builder()
+        user = User.builder()
                 .id(111L)
                 .userName("userNameForTest")
                 .build();
 
-        participantWithOrganizerDAO = ParticipantDAO.builder()
-                .meetingId(meetingDAO.getId())
-                .userId(userDAO.getId())
+        participantWithOrganizerDAO = Participant.builder()
+                .meetingId(meeting.getId())
+                .userId(user.getId())
                 .isOrganizer(true)
                 .build();
 
@@ -83,66 +83,68 @@ class MeetingServiceImplTest {
     @DisplayName("JUnit test for findById method")
     @Test
     void findById() {
-        given(meetingRepository.findById(meetingDAO.getId()))
-                .willReturn(Optional.of(meetingDAO));
+        given(meetingRepository.findById(meeting.getId()))
+                .willReturn(Optional.of(meeting));
 
 
-        Optional<MeetingDAO> receivedMeeting = Optional.ofNullable(meetingService.findById(meetingDAO.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("MeetingDAO is not found")));
+        Meeting receivedMeeting = meetingService.findById(meeting.getId());
 
         System.out.println(receivedMeeting);
 
         // then - verify the output
         assertThat(receivedMeeting).isNotNull();
+        assertEquals(receivedMeeting, meeting);
     }
 
     @Test
     void create() {
         //given - precondition or setup
-        given(meetingRepository.save(any(MeetingDAO.class)))
-                .willReturn(meetingDAO);
+        given(meetingRepository.save(any(Meeting.class)))
+                .willReturn(meeting);
 
-        given(participantRepository.save(any(ParticipantDAO.class)))
+        given(participantRepository.save(any(Participant.class)))
                 .willReturn(participantWithOrganizerDAO);
 
         // when - action or the behaviour that we are going test
-        MeetingDAO savedMeeting = meetingService.create(meetingDTO, userDAO.getId());
+        Meeting savedMeeting = meetingService.createMeetingWithoutParticipants(meetingDTO, user.getId());
         System.out.println(savedMeeting);
 
         // then - verify the output
         assertThat(savedMeeting).isNotNull();
+        assertEquals(savedMeeting, meeting);
     }
 
     @Test
     void update() {
         //given - precondition or setup
-        given(meetingRepository.findById(meetingDAO.getId()))
-                .willReturn(Optional.of(meetingDAO));
+        given(meetingRepository.findById(meeting.getId()))
+                .willReturn(Optional.of(meeting));
 
-        given(meetingRepository.save(meetingDAO))
-                .willReturn(meetingDAO);
+        given(meetingRepository.save(meeting))
+                .willReturn(meeting);
 
         System.out.println(meetingRepository);
         System.out.println(meetingService);
 
         // when - action or the behaviour that we are going test
-        MeetingDAO savedMeeting = meetingService.update(meetingDAO.getId() ,meetingDTO);
+        Meeting savedMeeting = meetingService.updateInfoAboutMeeting(meeting.getId() ,meetingDTO);
         System.out.println(savedMeeting);
 
         // then - verify the output
         assertThat(savedMeeting).isNotNull();
+        assertEquals(savedMeeting, meeting);
     }
 
     @Test
     void delete() {
-        given(meetingRepository.findById(meetingDAO.getId()))
-                .willReturn(Optional.of(meetingDAO));
+        given(meetingRepository.findById(meeting.getId()))
+                .willReturn(Optional.of(meeting));
 
-        willDoNothing().given(meetingRepository).deleteById(userDAO.getId());
+        willDoNothing().given(meetingRepository).deleteById(user.getId());
 
-        meetingService.delete(userDAO.getId());
+        meetingService.deleteMeetingById(user.getId());
 
-        verify(meetingRepository, times(1)).deleteById(userDAO.getId());
+        verify(meetingRepository, times(1)).deleteById(user.getId());
 
     }
 }

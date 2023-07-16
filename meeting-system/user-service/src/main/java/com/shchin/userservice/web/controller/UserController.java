@@ -1,9 +1,8 @@
 package com.shchin.userservice.web.controller;
 
-import com.shchin.userservice.dao.UserDAO;
-import com.shchin.userservice.exception.ResourceNotFoundException;
+import com.shchin.userservice.dao.User;
 import com.shchin.userservice.service.UserService;
-import com.shchin.userservice.service.UserServiceImpl;
+import com.shchin.userservice.service.impl.UserServiceImpl;
 import com.shchin.userservice.web.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +14,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/userController")
+@RequestMapping("/user-api")
 public class UserController {
 
     private final UserService userService;
@@ -25,43 +24,55 @@ public class UserController {
     }
 
     @GetMapping("/users")
-    public List<UserDAO> getAllUsers() {
-        log.info("Try to show all users");
+    public List<User> getAllUsers() {
+        log.info("[getAllUsers] >> no params");
 
-        return userService.getAllUsers();
+        List<User> userList = userService.getAllUsers();
+
+        log.info("[getAllUsers] << result: {}", userList);
+        return userList;
     }
 
     @GetMapping("/users/{id}")
-    public ResponseEntity<UserDAO> getUserById(@PathVariable(value = "id") Long id) {
-        log.info("Try to show user with id: '{}'", id);
+    public ResponseEntity<User> getUserById(@PathVariable(value = "id") Long id) {
+        log.info("[getUserById] >> id: {}", id);
 
-        UserDAO user = userService.getUserById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found for this id :: " + id));
+        User user = userService.getUserById(id);
+
+        log.info("[getUserById] << result: {}", user);
         return ResponseEntity.ok().body(user);
     }
 
     @PutMapping("/users")
-    public void createUser(@Valid @RequestBody UserDTO userDto) {
-        //Получили запрос на создание пользователя и логируем его
-        log.info("Try to create user request received: {}", userDto.toString());
+    public ResponseEntity<User> createUser(@Valid @RequestBody UserDTO userDto) {
+        log.info("[createUser] >> userDto: {}", userDto);
 
-        userService.createUser(userDto);
+        User userSaved = userService.createUser(userDto);
+
+        log.info("[createUser] >> result: {}", userSaved);
+
+        return ResponseEntity.ok().body(userSaved);
     }
 
     @PostMapping("/users/{id}")
-    public ResponseEntity<UserDAO> updateUser(@PathVariable(value = "id") Long id,
-                           @Valid @RequestBody UserDTO userDto) {
-        //Получили запрос на обновление пользователя и логируем его
-        log.info("Try to update user request received: {}", userDto.toString());
+    public ResponseEntity<User> updateUser(@PathVariable(value = "id") Long id,
+                                           @Valid @RequestBody UserDTO userDto) {
+        log.info("[updateUser] >> id: {}, userDto: {}", id, userDto);
 
-        return ResponseEntity.ok(userService.updateById(id, userDto));
+        User userUpdated = userService.updateUserById(id, userDto);
+
+        log.info("[updateUser] >> result: {}", userUpdated);
+
+        return ResponseEntity.ok().body(userUpdated);
 
     }
 
     @DeleteMapping("/users/{id}")
     public void deleteUser(@PathVariable(value = "id") Long id) {
-        log.info("Try to delete user with id: '{}'", id);
+        log.info("[deleteUser] >> id: {}", id);
 
         userService.deleteUser(id);
+
+        log.info("[deleteUser] >> result: users was deleted");
     }
 }

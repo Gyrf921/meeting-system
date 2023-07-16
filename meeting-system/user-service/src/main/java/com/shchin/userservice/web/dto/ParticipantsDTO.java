@@ -1,6 +1,5 @@
 package com.shchin.userservice.web.dto;
 
-import com.shchin.userservice.dao.UserDAO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,15 +13,15 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ParticipantDTO {
+public class ParticipantsDTO {
 
     @NotNull
     private MeetingDTO meetingDTO;
 
     @NotNull
-    private List<UserDAO> userDAOList;
+    private List<Long> usersIdList;
 
     @NotNull
-    private UserDAO userOrganizer;
+    private Long userOrganizerId;
 
 }

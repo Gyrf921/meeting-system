@@ -6,6 +6,7 @@ import org.hibernate.validator.constraints.Length;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import java.time.LocalDate;
 import java.util.Date;
 
 @Builder
@@ -17,7 +18,7 @@ public class MeetingDTO {
 
     private String description;
 
-    private Date datetimeStart;
+    private LocalDate datetimeStart;
 
-    private Date datetimeEnd;
+    private LocalDate datetimeEnd;
 }

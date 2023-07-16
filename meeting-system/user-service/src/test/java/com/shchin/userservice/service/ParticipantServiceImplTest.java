@@ -1,12 +1,12 @@
 package com.shchin.userservice.service;
 
-import com.shchin.userservice.dao.MeetingDAO;
-import com.shchin.userservice.dao.ParticipantDAO;
-import com.shchin.userservice.dao.UserDAO;
-import com.shchin.userservice.exception.ResourceNotFoundException;
-import com.shchin.userservice.repository.MeetingRepository;
+import com.shchin.userservice.dao.Meeting;
+import com.shchin.userservice.dao.Participant;
+import com.shchin.userservice.dao.User;
 import com.shchin.userservice.repository.ParticipantRepository;
-import com.shchin.userservice.repository.UserRepository;
+import com.shchin.userservice.service.impl.MeetingServiceImpl;
+import com.shchin.userservice.service.impl.ParticipantServiceImpl;
+import com.shchin.userservice.service.impl.UserServiceImpl;
 import com.shchin.userservice.web.dto.MeetingDTO;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,25 +17,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ParticipantServiceImplTest {
-    @Mock
-    private UserRepository userRepository;
-    @Mock
-    private MeetingRepository meetingRepository;
     @Mock
     private ParticipantRepository participantRepository;
 
@@ -46,40 +39,38 @@ class ParticipantServiceImplTest {
     @Mock
     private MeetingServiceImpl meetingService;
 
-    private UserDAO userDAO;
-    private MeetingDAO meetingDAO;
+    private User user;
+    private Meeting meeting;
     private MeetingDTO meetingDTO;
-    private ParticipantDAO participantDAO;
+    private Participant participant;
 
     @SneakyThrows
     @BeforeEach
     void setUp() {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        String dateInString = "2023-07-11";
 
-        meetingDAO = MeetingDAO.builder()
+        meeting = Meeting.builder()
                 .id(111L)
                 .name("userNameForTest")
                 .description("descriptionForTest")
-                .datetimeStart(formatter.parse(dateInString))
-                .datetimeEnd(formatter.parse(dateInString))
+                .datetimeStart(LocalDate.now())
+                .datetimeEnd(LocalDate.now())
                 .build();
 
         meetingDTO = MeetingDTO.builder()
                 .name("userNameForTest")
                 .description("descriptionForTest")
-                .datetimeStart(formatter.parse(dateInString))
-                .datetimeEnd(formatter.parse(dateInString))
+                .datetimeStart(LocalDate.now())
+                .datetimeEnd(LocalDate.now())
                 .build();
 
-        userDAO = UserDAO.builder()
+        user = User.builder()
                 .id(111L)
                 .userName("userNameForTest")
                 .build();
 
-        participantDAO = ParticipantDAO.builder()
-                .meetingId(meetingDAO.getId())
-                .userId(userDAO.getId())
+        participant = Participant.builder()
+                .meetingId(meeting.getId())
+                .userId(user.getId())
                 .isOrganizer(false)
                 .build();
 
@@ -90,94 +81,95 @@ class ParticipantServiceImplTest {
     @DisplayName("JUnit test for findAllUsersByMeetingId method")
     @Test
     void findAllUsersByMeetingId() {
-        ParticipantDAO participantDAO_Org = ParticipantDAO.builder()
-                .meetingId(meetingDAO.getId())
-                .userId(userDAO.getId())
+        Participant participant_Org = Participant.builder()
+                .meetingId(meeting.getId())
+                .userId(user.getId())
                 .isOrganizer(true)
                 .build();
 
-        given(participantRepository.findAllByMeetingId(meetingDAO.getId()))
-                .willReturn(List.of(participantDAO, participantDAO_Org));
+        given(participantRepository.findAllByMeetingId(meeting.getId()))
+                .willReturn(List.of(participant, participant_Org));
 
-        List<ParticipantDAO> participantDAOList = participantService.findAllUsersByMeetingId(meetingDAO.getId());
+        List<Participant> participantList = participantService.findAllUsersByMeetingId(meeting.getId());
 
-        System.out.println(participantDAOList);
+        System.out.println(participantList);
 
         // then - verify the output
-        assertThat(participantDAOList).isNotNull();
-        assertThat(participantDAOList.size()).isEqualTo(2);
+        assertThat(participantList).isNotNull();
+        assertThat(participantList.size()).isEqualTo(2);
+
     }
 
     @Test
-    void create() {
-        UserDAO userDAO2 = UserDAO.builder()
+    void createMeetingWithoutParticipants() {
+        User user2 = User.builder()
                 .id(112L)
                 .userName("userNameForTest2")
                 .build();
 
-        ParticipantDAO participantDAO2 = ParticipantDAO.builder()
-                .meetingId(meetingDAO.getId())
-                .userId(userDAO2.getId())
+        Participant participant2 = Participant.builder()
+                .meetingId(meeting.getId())
+                .userId(user2.getId())
                 .isOrganizer(true)
                 .build();
 
-        List<ParticipantDAO> participantDAOList = new LinkedList<>();
-        participantDAOList.add(participantDAO);
-        participantDAOList.add(participantDAO2);
+        List<Participant> participantList = new LinkedList<>();
+        participantList.add(participant);
+        participantList.add(participant2);
 
-        given(userService.usersIsExist(List.of(userDAO, userDAO2)))
+        given(userService.usersIsExist(List.of(user.getId(), user2.getId())))
                 .willReturn(true);
-        given(meetingService.create(meetingDTO, userDAO2.getId()))
-                .willReturn(meetingDAO);
-        when(participantRepository.saveAll(any(LinkedList.class)))
-                .thenReturn(participantDAOList);
+        given(meetingService.createMeetingWithoutParticipants(meetingDTO, user2.getId()))
+                .willReturn(meeting);
+        given(participantRepository.saveAll(any(LinkedList.class)))
+                .willReturn(participantList);
 
         // when - action or the behaviour that we are going test
-        List<ParticipantDAO> savedPart =
-                participantService.create(meetingDTO, List.of(userDAO, userDAO2), userDAO2);
+        List<Participant> savedPart =
+                participantService.createMeetingWithParticipants(meetingDTO, List.of(user.getId(), user2.getId()), user2.getId());
         System.out.println(savedPart);
 
         // then - verify the output
         assertThat(savedPart).isNotNull();
         assertThat(savedPart.size()).isEqualTo(2);
-        assertThat(savedPart.contains(participantDAO2)).isEqualTo(true);
+        assertThat(savedPart.contains(participant2)).isEqualTo(true);
     }
 
     @Test
     void addNewUsersInMeeting() {
-        UserDAO userDAO2 = UserDAO.builder()
+        User user2 = User.builder()
                 .id(112L)
                 .userName("userNameForTest2")
                 .build();
 
-        ParticipantDAO participantDAO2 = ParticipantDAO.builder()
-                .meetingId(meetingDAO.getId())
-                .userId(userDAO2.getId())
+        Participant participant2 = Participant.builder()
+                .meetingId(meeting.getId())
+                .userId(user2.getId())
                 .isOrganizer(false)
                 .build();
 
         //given - precondition or setup
         given(participantRepository.saveAll(any(List.class)))
-                .willReturn(List.of(participantDAO, participantDAO2));
+                .willReturn(List.of(participant, participant2));
 
         // when - action or the behaviour that we are going test
-        List<ParticipantDAO> savedPart = participantService.addNewUsersInMeeting(meetingDAO.getId(), List.of(userDAO , userDAO2));
+        List<Participant> savedPart = participantService.addNewUsersInMeeting(meeting.getId(), List.of(user.getId(), user2.getId()));
         System.out.println(savedPart);
 
         // then - verify the output
         assertThat(savedPart).isNotNull();
         assertThat(savedPart.size()).isEqualTo(2);
-        assertThat(savedPart.contains(participantDAO2)).isEqualTo(true);
+        assertThat(savedPart.contains(participant2)).isEqualTo(true);
     }
 
     @Test
     void delete() {
 
-        willDoNothing().given(participantRepository).deleteById(meetingDAO.getId());
+        willDoNothing().given(participantRepository).deleteById(meeting.getId());
 
-        participantService.delete(meetingDAO.getId());
+        participantService.deleteMeetingWithParticipant(meeting.getId());
 
-        verify(participantRepository, times(1)).deleteById(meetingDAO.getId());
+        verify(participantRepository, times(1)).deleteById(meeting.getId());
 
     }
 }
